@@ -1626,4 +1626,6 @@ export const settingsDict = {
   'settings.magicPrompts.page.toast.resetFailed': 'Failed to reset prompt',
   'settings.magicPrompts.page.toast.resetAllSuccess': 'All prompt overrides reset',
   'settings.magicPrompts.page.toast.resetAllFailed': 'Failed to reset all prompts',
+  'settings.page.knowledge.title': 'Second Brain',
+  'settings.knowledge.sidebar.title': 'Second Brain',
 } as const;

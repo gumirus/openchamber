@@ -1,4 +1,5 @@
 import { registerFsRoutes } from '../fs/routes.js';
+import { registerKnowledgeRoutes } from '../knowledge/routes.js';
 import { registerQuotaRoutes } from '../quota/routes.js';
 import { registerGitHubRoutes } from '../github/routes.js';
 import { registerGitRoutes } from '../git/routes.js';
@@ -248,6 +249,8 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       resolveGitBinaryForSpawn,
       openchamberUserConfigRoot,
     });
+
+    registerKnowledgeRoutes(app, { openchamberDataDir });
   };
 
   return {

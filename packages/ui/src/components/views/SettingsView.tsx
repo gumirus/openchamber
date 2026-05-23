@@ -6,6 +6,7 @@ import { useAgentsStore } from '@/stores/useAgentsStore';
 import { useCommandsStore } from '@/stores/useCommandsStore';
 import { useMcpConfigStore } from '@/stores/useMcpConfigStore';
 import { useSnippetsStore } from '@/stores/useSnippetsStore';
+import { useKnowledgeStore } from '@/stores/useKnowledgeStore';
 import { useSkillsStore } from '@/stores/useSkillsStore';
 import { useSkillsCatalogStore } from '@/stores/useSkillsCatalogStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +32,8 @@ import { MagicPromptsSidebar } from '@/components/sections/magic-prompts/MagicPr
 import { MagicPromptsPage } from '@/components/sections/magic-prompts/MagicPromptsPage';
 import { SnippetsSidebar } from '@/components/sections/snippets/SnippetsSidebar';
 import { SnippetsPage } from '@/components/sections/snippets/SnippetsPage';
+import { KnowledgeSidebar } from '@/components/sections/knowledge/KnowledgeSidebar';
+import { KnowledgePage } from '@/components/sections/knowledge/KnowledgePage';
 import { GitPage } from '@/components/sections/git-identities/GitPage';
 import type { OpenChamberSection } from '@/components/sections/openchamber/types';
 import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
@@ -77,6 +80,7 @@ const pageOrder: SettingsPageSlug[] = [
   'git',
   'magic-prompts',
   'snippets',
+  'knowledge',
   'projects',
   'remote-instances',
   'agents',
@@ -121,6 +125,8 @@ export function getSettingsNavIcon(slug: SettingsPageSlug): IconName | null {
       return 'ai-generate-2';
     case 'snippets':
       return SNIPPETS_SETTINGS_ICON.icon;
+    case 'knowledge':
+      return 'brain';
     case 'notifications':
       return 'notification-3';
     case 'shortcuts':
@@ -368,6 +374,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
     if (settingsSlug === 'snippets') {
       void useSnippetsStore.getState().loadSnippets();
     }
+    if (settingsSlug === 'knowledge') {
+      void useKnowledgeStore.getState().loadInfo();
+      void useKnowledgeStore.getState().loadStats();
+    }
   }, [activeProjectId, isSettingsDialogOpen, isWindowed, runtimeCtx.isVSCode, settingsSlug]);
 
   const openPage = React.useCallback((slug: SettingsPageSlug) => {
@@ -436,6 +446,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.magicPrompts.title');
       case 'snippets':
         return t('settings.page.snippets.title');
+      case 'knowledge':
+        return 'Second Brain';
       case 'notifications':
         return t('settings.page.notifications.title');
       case 'voice':
@@ -481,6 +493,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <MagicPromptsSidebar onItemSelect={opts.onItemSelect} />;
       case 'snippets':
         return <SnippetsSidebar onItemSelect={opts.onItemSelect} />;
+      case 'knowledge':
+        return <KnowledgeSidebar onItemSelect={opts.onItemSelect} />;
       default:
         return null;
     }
@@ -519,6 +533,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <MagicPromptsPage />;
       case 'snippets':
         return <SnippetsPage />;
+      case 'knowledge':
+        return <KnowledgePage />;
       case 'git':
         return <GitPage />;
       case 'appearance':

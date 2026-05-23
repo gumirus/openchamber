@@ -21,7 +21,8 @@ export type SettingsPageSlug =
   | 'snippets'
   | 'notifications'
   | 'voice'
-  | 'tunnel';
+  | 'tunnel'
+  | 'knowledge';
 
 export type SettingsPageGroup =
   | 'appearance'
@@ -191,6 +192,13 @@ export const SETTINGS_PAGE_METADATA: readonly SettingsPageMeta[] = [
     group: 'general',
     kind: 'split',
     keywords: ['prompt', 'templates', 'multi-run', 'strategy', 'approach'],
+  },
+  {
+    slug: 'knowledge',
+    title: 'Second Brain',
+    group: 'general',
+    kind: 'split',
+    keywords: ['knowledge', 'memory', 'rag', 'search', 'brain', 'second', 'dialogs', 'tasks', 'reminders'],
   },
 
   { slug: 'notifications', title: 'Notifications', group: 'general', kind: 'single', keywords: ['alerts', 'native', 'summary', 'summarization'], },
