@@ -16,6 +16,7 @@ interface KnowledgeStore {
   loadRecentDialogs: () => Promise<void>;
   setSearchQuery: (q: string) => void;
   search: (query: string) => Promise<void>;
+  scanVault: (vaultPath: string) => Promise<any>;
 }
 
 const BASE = '/api/knowledge';
@@ -87,6 +88,28 @@ export const useKnowledgeStore = create<KnowledgeStore>()(
           set({ searchResults: results, isLoading: false });
         } catch (e) {
           set({ error: e instanceof Error ? e.message : 'Unknown error', isLoading: false });
+        }
+      },
+
+      scanVault: async (vaultPath) => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await fetch(`${BASE}/vault/scan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vaultPath }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Scan failed');
+          }
+          const result = await res.json();
+          await get().loadStats();
+          set({ isLoading: false });
+          return result;
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : 'Unknown error', isLoading: false });
+          return null;
         }
       },
     }),

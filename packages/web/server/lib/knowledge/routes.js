@@ -1,3 +1,4 @@
+import express from 'express';
 import {
   ftsSearch,
   searchByName,
@@ -17,6 +18,7 @@ import {
   logApiCall,
   getStats,
   getDbInfo,
+  scanObsidianVault,
 } from './service.js';
 import { getDatabase, initDatabase, rebuildFtsIndex } from './database.js';
 
@@ -32,6 +34,7 @@ export const registerKnowledgeRoutes = (app, dependencies) => {
     }
   };
 
+  app.use('/api/knowledge', express.json());
   app.use('/api/knowledge', (_req, _res, next) => {
     try {
       initDatabase(openchamberDataDir);
@@ -221,6 +224,20 @@ export const registerKnowledgeRoutes = (app, dependencies) => {
       const { model, endpoint, inputTokens, outputTokens, cost, durationMs, status, error } = req.body || {};
       logApiCall(openchamberDataDir, { model, endpoint, inputTokens, outputTokens, cost, durationMs, status, error });
       res.json({ success: true });
+    });
+  });
+
+  app.post('/api/knowledge/vault/scan', (req, res) => {
+    withError(res, () => {
+      const vaultPath = req.body?.vaultPath || '';
+      if (!vaultPath) {
+        return res.status(400).json({ error: 'vaultPath is required' });
+      }
+      const result = scanObsidianVault(openchamberDataDir, vaultPath);
+      if (result.error) {
+        return res.status(400).json(result);
+      }
+      res.json(result);
     });
   });
 

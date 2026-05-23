@@ -15,7 +15,7 @@ export const ftsSearch = (dataDir, query, limit = 10) => {
   if (!sanitized) return [];
 
   try {
-    const rows = db.prepare(`
+    const rows = db.query(`
       SELECT f.id, f.file_path, f.file_name, f.dir_path, f.file_ext, f.file_type,
              f.category, f.size_bytes, f.content_preview, f.is_dir, f.is_binary, f.depth,
              rank
@@ -52,7 +52,7 @@ export const searchByName = (dataDir, query, limit = 10) => {
   params.push(limit);
 
   try {
-    return db.prepare(sql).all(...params);
+    return db.query(sql).all(...params);
   } catch {
     return [];
   }
@@ -65,7 +65,7 @@ export const searchObsidian = (dataDir, query, vaultPath, limit = 5) => {
     try {
       const sanitized = sanitizeFtsQuery(query);
       if (!sanitized) return [];
-      return db.prepare(`
+      return db.query(`
         SELECT f.id, f.file_path, f.file_name, f.dir_path, f.content_preview, rank
         FROM file_fts
         JOIN file_index f ON file_fts.rowid = f.id
@@ -80,7 +80,7 @@ export const searchObsidian = (dataDir, query, vaultPath, limit = 5) => {
 
   if (ftsResults.length >= limit) return ftsResults;
 
-  const nameResults = db.prepare(`
+  const nameResults = db.query(`
     SELECT * FROM file_index
     WHERE file_type = 'document' AND LOWER(file_name) LIKE ? AND dir_path LIKE ?
     LIMIT ?
@@ -142,7 +142,7 @@ export const getContextForPrompt = (dataDir, query, { vaultPath, topK = 3 } = {}
 export const getMasterContext = (dataDir, userId = 0) => {
   const db = getDatabase(dataDir);
 
-  const recentDialogs = db.prepare(`
+  const recentDialogs = db.query(`
     SELECT date, time, source, user_message, bot_response
     FROM daily_logs
     WHERE user_id = ?
@@ -150,14 +150,14 @@ export const getMasterContext = (dataDir, userId = 0) => {
     LIMIT 15
   `).all(userId);
 
-  const activeTasks = db.prepare(`
+  const activeTasks = db.query(`
     SELECT title, priority, date
     FROM tasks
     WHERE user_id = ? AND status = 'active'
     ORDER BY date DESC
   `).all(userId);
 
-  const todayDialogs = db.prepare(`
+  const todayDialogs = db.query(`
     SELECT COUNT(*) as count FROM daily_logs
     WHERE user_id = ? AND date = date('now', 'localtime')
   `).get(userId);
@@ -191,7 +191,7 @@ export const logDailyDialog = (dataDir, { userId = 0, source = 'web', userMessag
   const date = now.toISOString().slice(0, 10);
   const time = now.toTimeString().slice(0, 5);
 
-  db.prepare(`
+  db.query(`
     INSERT INTO daily_logs (user_id, date, time, source, user_message, bot_response, model, tokens_input, tokens_output, cost)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(userId, date, time, source, userMessage, botResponse, model, tokensInput, tokensOutput, cost);
@@ -199,7 +199,7 @@ export const logDailyDialog = (dataDir, { userId = 0, source = 'web', userMessag
 
 export const logChatMessage = (dataDir, { userId = 0, role, message, source = 'web' }) => {
   const db = getDatabase(dataDir);
-  db.prepare(`
+  db.query(`
     INSERT INTO chat_history (user_id, role, message, source)
     VALUES (?, ?, ?, ?)
   `).run(userId, role, message, source);
@@ -207,7 +207,7 @@ export const logChatMessage = (dataDir, { userId = 0, role, message, source = 'w
 
 export const getChatHistory = (dataDir, { userId = 0, limit = 50, offset = 0 } = {}) => {
   const db = getDatabase(dataDir);
-  return db.prepare(`
+  return db.query(`
     SELECT * FROM chat_history
     WHERE user_id = ?
     ORDER BY id DESC
@@ -218,7 +218,7 @@ export const getChatHistory = (dataDir, { userId = 0, limit = 50, offset = 0 } =
 export const createTask = (dataDir, { userId = 0, title, description = '', priority = 'medium', date }) => {
   const db = getDatabase(dataDir);
   const taskDate = date || new Date().toISOString().slice(0, 10);
-  const result = db.prepare(`
+  const result = db.query(`
     INSERT INTO tasks (user_id, title, description, priority, date)
     VALUES (?, ?, ?, ?, ?)
   `).run(userId, title, description, priority, taskDate);
@@ -230,11 +230,11 @@ export const updateTaskStatus = (dataDir, taskId, status) => {
   const now = new Date().toISOString();
 
   if (status === 'done') {
-    db.prepare('UPDATE tasks SET status = ?, completed_at = ? WHERE id = ?').run(status, now, taskId);
+    db.query('UPDATE tasks SET status = ?, completed_at = ? WHERE id = ?').run(status, now, taskId);
   } else if (status === 'cancelled') {
-    db.prepare('UPDATE tasks SET status = ?, cancelled_at = ? WHERE id = ?').run(status, now, taskId);
+    db.query('UPDATE tasks SET status = ?, cancelled_at = ? WHERE id = ?').run(status, now, taskId);
   } else {
-    db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, taskId);
+    db.query('UPDATE tasks SET status = ? WHERE id = ?').run(status, taskId);
   }
 };
 
@@ -255,12 +255,12 @@ export const getTasks = (dataDir, { userId = 0, status, date, limit = 50 } = {})
   sql += ' ORDER BY created_at DESC LIMIT ?';
   params.push(limit);
 
-  return db.prepare(sql).all(...params);
+  return db.query(sql).all(...params);
 };
 
 export const createReminder = (dataDir, { userId = 0, text, remindAt }) => {
   const db = getDatabase(dataDir);
-  const result = db.prepare(`
+  const result = db.query(`
     INSERT INTO reminders (user_id, text, remind_at)
     VALUES (?, ?, ?)
   `).run(userId, text, remindAt);
@@ -269,7 +269,7 @@ export const createReminder = (dataDir, { userId = 0, text, remindAt }) => {
 
 export const getDueReminders = (dataDir) => {
   const db = getDatabase(dataDir);
-  return db.prepare(`
+  return db.query(`
     SELECT * FROM reminders
     WHERE sent = 0 AND remind_at <= datetime('now')
     ORDER BY remind_at ASC
@@ -278,12 +278,12 @@ export const getDueReminders = (dataDir) => {
 
 export const markReminderSent = (dataDir, id) => {
   const db = getDatabase(dataDir);
-  db.prepare('UPDATE reminders SET sent = 1 WHERE id = ?').run(id);
+  db.query('UPDATE reminders SET sent = 1 WHERE id = ?').run(id);
 };
 
 export const logApiCall = (dataDir, { model, endpoint, inputTokens, outputTokens, cost, durationMs, status = 'success', error = null }) => {
   const db = getDatabase(dataDir);
-  db.prepare(`
+  db.query(`
     INSERT INTO api_logs (model, endpoint, input_tokens, output_tokens, cost, duration_ms, status, error)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(model, endpoint, inputTokens, outputTokens, cost, durationMs, status, error);
@@ -292,12 +292,12 @@ export const logApiCall = (dataDir, { model, endpoint, inputTokens, outputTokens
 export const getStats = (dataDir) => {
   const db = getDatabase(dataDir);
 
-  const dialogCount = db.prepare('SELECT COUNT(*) as count FROM daily_logs').get();
-  const taskCount = db.prepare('SELECT COUNT(*) as count, status FROM tasks GROUP BY status').all();
-  const totalCost = db.prepare('SELECT COALESCE(SUM(cost), 0) as total FROM api_logs').get();
-  const cacheHits = db.prepare('SELECT COALESCE(SUM(hits), 0) as total FROM response_cache').get();
-  const fileCount = db.prepare('SELECT COUNT(*) as count FROM file_index').get();
-  const reminderPending = db.prepare("SELECT COUNT(*) as count FROM reminders WHERE sent = 0").get();
+  const dialogCount = db.query('SELECT COUNT(*) as count FROM daily_logs').get();
+  const taskCount = db.query('SELECT COUNT(*) as count, status FROM tasks GROUP BY status').all();
+  const totalCost = db.query('SELECT COALESCE(SUM(cost), 0) as total FROM api_logs').get();
+  const cacheHits = db.query('SELECT COALESCE(SUM(hits), 0) as total FROM response_cache').get();
+  const fileCount = db.query('SELECT COUNT(*) as count FROM file_index').get();
+  const reminderPending = db.query("SELECT COUNT(*) as count FROM reminders WHERE sent = 0").get();
 
   const tasksByStatus = {};
   for (const row of taskCount) {
@@ -312,6 +312,83 @@ export const getStats = (dataDir) => {
     indexedFiles: fileCount.count,
     pendingReminders: reminderPending.count,
   };
+};
+
+export const scanObsidianVault = (dataDir, vaultPath) => {
+  const db = getDatabase(dataDir);
+  const fs = require('fs');
+  const path = require('path');
+
+  if (!fs.existsSync(vaultPath)) {
+    return { indexed: 0, error: 'Vault path does not exist' };
+  }
+
+  let indexed = 0;
+  const scanDir = (dir) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch { return; }
+
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.name.endsWith('.md')) {
+        try {
+          const stats = fs.statSync(fullPath);
+          const content = fs.readFileSync(fullPath, 'utf-8');
+          const contentPreview = content.slice(0, 500);
+          const contentHash = require('crypto')
+            .createHash('md5').update(content).digest('hex');
+          const relPath = fullPath.replace(vaultPath, '').replace(/^\//, '');
+          const dirPath = path.dirname(relPath);
+
+          const existing = db.query(
+            'SELECT content_hash FROM vault_index WHERE file_path = ?'
+          ).get(relPath);
+
+          if (existing && existing.content_hash === contentHash) return;
+
+          db.query(`
+            INSERT INTO vault_index (file_path, file_name, content_hash, chunk_count, last_indexed)
+            VALUES (?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(file_path) DO UPDATE SET
+              content_hash = excluded.content_hash,
+              chunk_count = excluded.chunk_count,
+              last_indexed = datetime('now')
+          `).run(relPath, entry.name, contentHash, 0);
+
+          db.query(`
+            INSERT INTO file_index (file_path, file_name, dir_path, file_ext, file_type, category, size_bytes, content_hash, content_preview, modified_at, indexed_at)
+            VALUES (?, ?, ?, '.md', 'document', 'note', ?, ?, ?, datetime('now'), datetime('now'))
+            ON CONFLICT(file_path) DO UPDATE SET
+              content_hash = excluded.content_hash,
+              content_preview = excluded.content_preview,
+              size_bytes = excluded.size_bytes,
+              modified_at = excluded.modified_at,
+              indexed_at = datetime('now')
+          `).run(relPath, entry.name, dirPath, stats.size, contentHash, contentPreview);
+
+          indexed++;
+        } catch (e) {
+          console.warn(`Failed to index ${fullPath}:`, e.message);
+        }
+      }
+    }
+  };
+
+  scanDir(vaultPath);
+
+  try {
+    db.run("INSERT INTO file_fts(file_fts) VALUES('rebuild')");
+  } catch (e) {
+    console.warn('Failed to rebuild FTS:', e.message);
+  }
+
+  return { indexed };
 };
 
 export const getDbInfo = (dataDir) => {

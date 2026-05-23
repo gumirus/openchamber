@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useKnowledgeStore } from '@/stores/useKnowledgeStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/lib/i18n';
@@ -11,8 +11,11 @@ export const KnowledgePage: React.FC = () => {
     searchQuery,
     searchResults,
     isLoading,
+    error,
     setSearchQuery,
     search,
+    scanVault,
+    loadStats,
     loadRecentDialogs,
   } = useKnowledgeStore(
     useShallow((s) => ({
@@ -21,15 +24,19 @@ export const KnowledgePage: React.FC = () => {
       searchQuery: s.searchQuery,
       searchResults: s.searchResults,
       isLoading: s.isLoading,
+      error: s.error,
       setSearchQuery: s.setSearchQuery,
       search: s.search,
+      scanVault: s.scanVault,
+      loadStats: s.loadStats,
       loadRecentDialogs: s.loadRecentDialogs,
     })),
   );
 
   React.useEffect(() => {
     loadRecentDialogs();
-  }, [loadRecentDialogs]);
+    loadStats();
+  }, [loadRecentDialogs, loadStats]);
 
   const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -40,6 +47,11 @@ export const KnowledgePage: React.FC = () => {
     search(searchQuery);
   };
 
+  const handleScan = useCallback(async () => {
+    const vaultPath = '/Users/gumirus/Documents/SecondBrain/Vault';
+    await scanVault(vaultPath);
+  }, [scanVault]);
+
   const results = searchResults?.results;
 
   return (
@@ -48,9 +60,32 @@ export const KnowledgePage: React.FC = () => {
         <div className="space-y-1">
           <h1 className="typography-ui-header font-semibold text-foreground">Second Brain</h1>
           <p className="typography-ui text-muted-foreground">
-            Personal knowledge base with full-text search, dialog history, tasks, and reminders.
+            Personal knowledge base with full-text search, Obsidian notes, dialog history, tasks, and reminders.
           </p>
         </div>
+
+        {stats && (
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-lg border border-border bg-[var(--surface-elevated)] px-3 py-2">
+              <span className="typography-micro text-muted-foreground/70">Indexed Files</span>
+              <div className="typography-ui-label text-foreground">{stats.indexedFiles ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-[var(--surface-elevated)] px-3 py-2">
+              <span className="typography-micro text-muted-foreground/70">Dialogs</span>
+              <div className="typography-ui-label text-foreground">{stats.dialogs ?? 0}</div>
+            </div>
+            <button
+              onClick={handleScan}
+              disabled={isLoading}
+              className="rounded-lg border border-border bg-[var(--surface-elevated)] px-3 py-2 typography-ui-label text-foreground hover:bg-border disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Scanning...' : 'Scan Obsidian Vault'}
+            </button>
+            {error && (
+              <span className="typography-micro text-red-500 self-center">{error}</span>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSearch} className="flex gap-2">
           <input

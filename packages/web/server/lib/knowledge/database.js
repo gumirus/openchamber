@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import path from 'path';
 import fs from 'fs';
 
@@ -171,13 +171,13 @@ export const initDatabase = (dataDir) => {
   }
 
   const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA foreign_keys = ON');
 
-  db.exec(SCHEMA);
+  db.run(SCHEMA);
 
   try {
-    db.exec(FTS_SCHEMA);
+    db.run(FTS_SCHEMA);
   } catch (e) {
     console.warn('Failed to create FTS5 table:', e.message);
   }
@@ -201,7 +201,7 @@ export const closeDatabase = () => {
 
 export const rebuildFtsIndex = (db) => {
   try {
-    db.exec("INSERT INTO file_fts(file_fts) VALUES('rebuild')");
+    db.run("INSERT INTO file_fts(file_fts) VALUES('rebuild')");
     return true;
   } catch (e) {
     console.warn('Failed to rebuild FTS index:', e.message);
